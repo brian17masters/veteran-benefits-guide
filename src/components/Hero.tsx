@@ -8,7 +8,7 @@ const Hero = () => {
       <div className="container">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="animate-fade-up mb-4">
-            Navigate Your Veterans Benefits with Confidence
+            Navigate Your Veterans Benefits with FidServe
           </h1>
           <p className="text-xl opacity-90 mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
             Discover all the benefits you've earned, plan your financial future, and make the most of your service.

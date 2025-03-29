@@ -24,9 +24,9 @@ const NavBar = () => {
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
             <div className="relative h-8 w-8 overflow-hidden rounded bg-navy flex items-center justify-center">
-              <span className="text-gold font-bold">VB</span>
+              <span className="text-gold font-bold">FS</span>
             </div>
-            <span className="font-bold text-lg text-navy hidden md:inline-block">VeteranBenefits</span>
+            <span className="font-bold text-lg text-navy hidden md:inline-block">FidServe</span>
           </Link>
         </div>
 

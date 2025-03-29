@@ -10,9 +10,9 @@ const Footer = () => {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="relative h-8 w-8 overflow-hidden rounded bg-white flex items-center justify-center">
-                <span className="text-navy font-bold">VB</span>
+                <span className="text-navy font-bold">FS</span>
               </div>
-              <span className="font-bold text-lg">VeteranBenefits</span>
+              <span className="font-bold text-lg">FidServe</span>
             </div>
             <p className="text-white/80 mb-4">
               Helping veterans navigate benefits and plan for their financial future.
@@ -51,7 +51,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-white/20 mt-8 pt-8 text-center text-white/60">
-          <p>© {new Date().getFullYear()} VeteranBenefits. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} FidServe. All rights reserved.</p>
           <p className="mt-2 text-sm">
             This site is not affiliated with the U.S. Department of Veterans Affairs or any government agency.
           </p>
