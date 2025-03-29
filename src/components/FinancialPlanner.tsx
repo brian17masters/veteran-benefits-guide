@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,11 @@ import {
   ResponsiveContainer 
 } from "recharts";
 
-const FinancialPlanner = () => {
+interface FinancialPlannerProps {
+  onCalculate?: (data: any) => void;
+}
+
+const FinancialPlanner: React.FC<FinancialPlannerProps> = ({ onCalculate }) => {
   const [currentIncome, setCurrentIncome] = useState("");
   const [expectedPension, setExpectedPension] = useState("");
   const [disabilityPayment, setDisabilityPayment] = useState("");
@@ -35,6 +38,8 @@ const FinancialPlanner = () => {
     savingsTarget: 0,
     yearsToRetirement: 0,
     currentSavings: 0,
+    pensionAmount: 0,
+    disabilityAmount: 0
   });
   
   // Chart data
@@ -66,14 +71,23 @@ const FinancialPlanner = () => {
       : 0;
     
     // Update summary data
-    setSummaryData({
+    const updatedSummaryData = {
       monthlyIncome: totalMonthlyIncome,
       monthlyExpenses: expenses,
       surplus: monthlySurplus,
       savingsTarget: retirementNeeds,
       yearsToRetirement: yearsToRetirement,
       currentSavings: currentSavings,
-    });
+      pensionAmount: pension,
+      disabilityAmount: disability
+    };
+    
+    setSummaryData(updatedSummaryData);
+    
+    // Pass data to parent component if callback provided
+    if (onCalculate) {
+      onCalculate(updatedSummaryData);
+    }
     
     // Create pie chart data for income
     setIncomeData([

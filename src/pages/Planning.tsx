@@ -1,12 +1,30 @@
-
-import React from "react";
+import React, { useState } from "react";
 import FinancialPlanner from "@/components/FinancialPlanner";
+import RetirementSimulator from "@/components/RetirementSimulator"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Footer from "@/components/Footer";
 
 const Planning = () => {
+  const [financialData, setFinancialData] = useState({
+    currentIncome: 0,
+    currentExpenses: 0,
+    currentSavings: 0,
+    pensionAmount: 0,
+    disabilityAmount: 0
+  });
+
+  const handleFinancialDataUpdate = (data: any) => {
+    setFinancialData({
+      currentIncome: data.monthlyIncome || 0,
+      currentExpenses: data.monthlyExpenses || 0,
+      currentSavings: data.currentSavings || 0,
+      pensionAmount: data.pensionAmount || 0,
+      disabilityAmount: data.disabilityAmount || 0
+    });
+  };
+
   return (
     <div>
       <section className="hero-section">
@@ -28,11 +46,29 @@ const Planning = () => {
               Create a personalized financial plan based on your unique situation.
             </p>
           </div>
-          <FinancialPlanner />
+          <FinancialPlanner onCalculate={handleFinancialDataUpdate} />
         </div>
       </section>
 
       <section className="section bg-offwhite">
+        <div className="container">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="mb-4">Retirement & Investment Simulator</h2>
+            <p className="text-lg text-muted-foreground">
+              Explore scenarios to help you reach your retirement goals.
+            </p>
+          </div>
+          <RetirementSimulator 
+            currentIncome={financialData.currentIncome}
+            currentExpenses={financialData.currentExpenses}
+            currentSavings={financialData.currentSavings}
+            pensionAmount={financialData.pensionAmount}
+            disabilityAmount={financialData.disabilityAmount}
+          />
+        </div>
+      </section>
+
+      <section className="section bg-white">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="mb-4">Financial Resources for Veterans</h2>
