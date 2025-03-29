@@ -4,13 +4,13 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-navy text-white py-12">
+    <footer className="bg-forestGreen text-white py-12">
       <div className="container">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="relative h-8 w-8 overflow-hidden rounded bg-white flex items-center justify-center">
-                <span className="text-navy font-bold">FS</span>
+                <span className="text-forestGreen font-bold">FS</span>
               </div>
               <span className="font-bold text-lg">FidServe</span>
             </div>

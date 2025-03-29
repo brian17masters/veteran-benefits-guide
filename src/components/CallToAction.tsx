@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const CallToAction = () => {
   return (
-    <section className="bg-navy text-white py-16">
+    <section className="bg-forestGreen text-white py-16">
       <div className="container">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="mb-4">Ready to Maximize Your Veterans Benefits?</h2>
@@ -12,7 +12,7 @@ const CallToAction = () => {
             Create your personalized benefits plan today and take the first step toward a secure financial future.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-gold text-navy hover:bg-gold/90">
+            <Button size="lg" className="bg-grey text-forestGreen hover:bg-grey/90">
               Get Started Now
             </Button>
             <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">

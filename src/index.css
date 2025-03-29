@@ -5,66 +5,66 @@
 
 @layer base {
   :root {
-    --background: 210 33% 98%;
-    --foreground: 222 47% 11%;
+    --background: 120 33% 98%;
+    --foreground: 220 10% 30%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 10% 30%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 10% 30%;
 
-    --primary: 215 74% 21%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 142 43% 30%;
+    --primary-foreground: 120 40% 98%;
 
-    --secondary: 45 100% 50%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 10% 70%;
+    --secondary-foreground: 220 10% 30%;
 
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 359 69% 41%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 142 30% 85%;
+    --accent-foreground: 142 43% 30%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 222 84% 20%;
+    --ring: 142 43% 30%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 215 74% 21%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 45 100% 50%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 215 30% 28%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 30% 28%;
-    --sidebar-ring: 45 100% 50%;
+    --sidebar-background: 142 43% 30%;
+    --sidebar-foreground: 120 40% 98%;
+    --sidebar-primary: 220 10% 70%;
+    --sidebar-primary-foreground: 220 10% 30%;
+    --sidebar-accent: 142 30% 35%;
+    --sidebar-accent-foreground: 120 40% 98%;
+    --sidebar-border: 142 30% 35%;
+    --sidebar-ring: 220 10% 70%;
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 220 10% 12%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 11%;
+    --card: 220 10% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 11%;
+    --popover: 220 10% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 215 74% 21%;
+    --primary: 142 43% 30%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 45 100% 50%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 10% 70%;
+    --secondary-foreground: 220 10% 12%;
 
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 359 69% 41%;
+    --accent: 142 30% 25%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 63% 31%;
@@ -74,14 +74,14 @@
     --input: 217 33% 18%;
     --ring: 212 27% 84%;
     
-    --sidebar-background: 215 74% 16%;
+    --sidebar-background: 142 43% 25%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 45 100% 50%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 215 30% 22%;
+    --sidebar-primary: 220 10% 70%;
+    --sidebar-primary-foreground: 220 10% 12%;
+    --sidebar-accent: 142 30% 22%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 30% 22%;
-    --sidebar-ring: 45 100% 50%;
+    --sidebar-border: 142 30% 22%;
+    --sidebar-ring: 220 10% 70%;
   }
 }
 
@@ -122,7 +122,7 @@
 
 @layer components {
   .hero-section {
-    @apply bg-gradient-to-b from-navy to-navy/80 text-white py-16 px-4 md:py-24;
+    @apply bg-gradient-to-b from-forestGreen to-forestGreen/80 text-white py-16 px-4 md:py-24;
   }
 
   .section {
@@ -134,6 +134,6 @@
   }
 
   .benefit-card {
-    @apply p-6 rounded-lg border-2 border-gold bg-white text-foreground shadow transition-all hover:shadow-md;
+    @apply p-6 rounded-lg border-2 border-grey bg-white text-foreground shadow transition-all hover:shadow-md;
   }
 }

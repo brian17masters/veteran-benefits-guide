@@ -63,10 +63,12 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				navy: "#0A3161",
-				gold: "#FFD700",
-				patriot: "#B22234",
-				offwhite: "#F0F4F8",
+				// Replacing navy with forestGreen and gold with grey
+				forestGreen: "#2c6e49",
+				grey: "#aaadb0",
+				lightGrey: "#F1F0FB",
+				darkGrey: "#4a4a4a",
+				softGreen: "#F2FCE2",
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

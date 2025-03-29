@@ -14,7 +14,7 @@ const Hero = () => {
             Discover all the benefits you've earned, plan your financial future, and make the most of your service.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up" style={{ animationDelay: "0.2s" }}>
-            <Button size="lg" className="bg-gold text-navy hover:bg-gold/90">
+            <Button size="lg" className="bg-grey text-forestGreen hover:bg-grey/90">
               Calculate My Benefits
             </Button>
             <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
