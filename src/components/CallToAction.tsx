@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button";
 
 const CallToAction = () => {
   return (
-    <section className="bg-forestGreen text-white py-16">
+    <section className="text-white py-16" 
+             style={{
+               backgroundImage: "linear-gradient(to bottom, rgba(44, 110, 73, 0.9), rgba(44, 110, 73, 0.95)), url('/veterans-support.jpg')",
+               backgroundSize: "cover",
+               backgroundPosition: "center"
+             }}>
       <div className="container">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="mb-4">Ready to Maximize Your Veterans Benefits?</h2>

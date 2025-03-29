@@ -1,0 +1,15 @@
+
+.heroSection {
+  background-image: linear-gradient(to bottom, rgba(44, 110, 73, 0.85), rgba(44, 110, 73, 0.95)), 
+                    url('/servicemembers.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 4rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .heroSection {
+    padding: 6rem 1rem;
+  }
+}

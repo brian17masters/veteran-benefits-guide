@@ -1,10 +1,11 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import styles from "./Hero.module.css";
 
 const Hero = () => {
   return (
-    <section className="hero-section">
+    <section className={styles.heroSection}>
       <div className="container">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="animate-fade-up mb-4">
