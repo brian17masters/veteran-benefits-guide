@@ -293,7 +293,12 @@ const FinancialPlanner = () => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                      <Tooltip formatter={(value) => {
+                        if (typeof value === 'number') {
+                          return `$${value.toFixed(2)}`;
+                        }
+                        return `$${value}`;
+                      }} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
@@ -321,7 +326,12 @@ const FinancialPlanner = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="year" />
                       <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                      <Tooltip formatter={(value) => {
+                        if (typeof value === 'number') {
+                          return `$${value.toLocaleString()}`;
+                        }
+                        return `$${value}`;
+                      }} />
                       <Legend />
                       <Bar dataKey="savings" name="Projected Savings" fill="#0A3161" />
                     </BarChart>
