@@ -23,7 +23,11 @@ import {
   Pie, 
   Cell
 } from "recharts";
-import { DollarSign, PiggyBank, Calculator, Calendar } from "lucide-react";
+import { DollarSign, PiggyBank, Calculator, Calendar, Target, TrendingUp } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 interface RetirementSimulatorProps {
   currentIncome?: number;
@@ -42,6 +46,16 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
   disabilityAmount = 0,
   age = 35
 }) => {
+  // Form state
+  const form = useForm({
+    defaultValues: {
+      retirementGoal: "maintainLifestyle",
+      currentlyReceivingPension: false,
+      currentlyReceivingDisability: false,
+      marketPerformance: "average"
+    }
+  });
+  
   // User inputs
   const [retirementAge, setRetirementAge] = useState<number>(65);
   const [monthlyExpensesInRetirement, setMonthlyExpensesInRetirement] = useState<string>(
@@ -50,6 +64,16 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
   const [currentAge, setCurrentAge] = useState<string>(age.toString());
   const [monthlyContribution, setMonthlyContribution] = useState<string>("500");
   const [riskTolerance, setRiskTolerance] = useState<number>(50);
+  
+  // Benefits status
+  const [currentlyReceivingPension, setCurrentlyReceivingPension] = useState<boolean>(false);
+  const [currentlyReceivingDisability, setCurrentlyReceivingDisability] = useState<boolean>(false);
+  
+  // Retirement goal
+  const [retirementGoal, setRetirementGoal] = useState<"maintainLifestyle" | "growWealth">("maintainLifestyle");
+  
+  // Market performance simulation
+  const [marketPerformance, setMarketPerformance] = useState<"strong" | "average" | "below">("average");
   
   // Calculated values
   const [retirementResults, setRetirementResults] = useState<{
@@ -60,6 +84,8 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     shortfall: number;
     requiredMonthlySavings: number;
     yearsToRetirement: number;
+    earliestRetirementAge: number;
+    successProbability: number;
   }>({
     totalNeeded: 0,
     currentSavingsAtRetirement: 0,
@@ -67,7 +93,9 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     disabilityValue: 0,
     shortfall: 0,
     requiredMonthlySavings: 0,
-    yearsToRetirement: 0
+    yearsToRetirement: 0,
+    earliestRetirementAge: 0,
+    successProbability: 0
   });
   
   // Chart data
@@ -82,6 +110,22 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     aggressive: { stocks: 80, bonds: 15, cash: 5, expectedReturn: 9 }
   };
   
+  // Market performance rates
+  const marketPerformanceRates = {
+    strong: { multiplier: 1.3 },
+    average: { multiplier: 1.0 },
+    below: { multiplier: 0.7 }
+  };
+  
+  // Handle form submission
+  const handleFormSubmit = (values: any) => {
+    setRetirementGoal(values.retirementGoal);
+    setCurrentlyReceivingPension(values.currentlyReceivingPension);
+    setCurrentlyReceivingDisability(values.currentlyReceivingDisability);
+    setMarketPerformance(values.marketPerformance);
+    calculateRetirement();
+  };
+  
   // Get risk profile based on risk tolerance
   const getRiskProfile = () => {
     if (riskTolerance < 33) {
@@ -93,6 +137,98 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     }
   };
   
+  // Calculate earliest possible retirement age
+  const calculateEarliestRetirementAge = () => {
+    const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
+    const currentAgeValue = parseInt(currentAge) || 35;
+    const monthlySavingsTarget = monthlyExpenses;
+    
+    // Calculate how much of monthly expenses is already covered by pension and disability
+    const monthlyPension = currentlyReceivingPension ? pensionAmount : 0;
+    const monthlyDisability = currentlyReceivingDisability ? disabilityAmount : 0;
+    const coveredExpenses = monthlyPension + monthlyDisability;
+    const neededFromSavings = Math.max(0, monthlySavingsTarget - coveredExpenses);
+    
+    // If pension and disability fully cover expenses, can retire now
+    if (neededFromSavings <= 0) {
+      return currentAgeValue;
+    }
+    
+    // Calculate how much savings are needed using the 4% rule (25x annual expenses)
+    const annualNeededFromSavings = neededFromSavings * 12;
+    const totalSavingsNeeded = annualNeededFromSavings * 25;
+    
+    // Get expected return based on risk profile and market performance
+    const riskProfile = getRiskProfile();
+    const baseAnnualReturn = riskProfile.expectedReturn / 100;
+    const marketMultiplier = marketPerformanceRates[marketPerformance].multiplier;
+    const annualReturn = baseAnnualReturn * marketMultiplier;
+    
+    // Start with current age and iterate until we have enough savings
+    let age = currentAgeValue;
+    let currentSavingsValue = currentSavings;
+    const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
+    
+    while (currentSavingsValue < totalSavingsNeeded && age < 100) {
+      // Apply annual return
+      currentSavingsValue = currentSavingsValue * (1 + annualReturn);
+      
+      // Add annual contributions
+      currentSavingsValue += monthlyContributionValue * 12;
+      
+      // Increment age
+      age++;
+    }
+    
+    return Math.min(age, 100);
+  };
+  
+  // Calculate success probability
+  const calculateSuccessProbability = () => {
+    const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
+    const annualExpenses = monthlyExpenses * 12;
+    
+    // Calculate total income in retirement
+    const monthlyPension = currentlyReceivingPension ? pensionAmount : 0;
+    const monthlyDisability = currentlyReceivingDisability ? disabilityAmount : 0;
+    const monthlyGuaranteedIncome = monthlyPension + monthlyDisability;
+    const annualGuaranteedIncome = monthlyGuaranteedIncome * 12;
+    
+    // Calculate what percentage of expenses is covered by guaranteed income
+    const expensesCoveredPercentage = Math.min(1, annualGuaranteedIncome / annualExpenses) * 100;
+    
+    // Calculate if savings are on track
+    const currentAgeValue = parseInt(currentAge) || 35;
+    const yearsToRetirement = retirementAge - currentAgeValue;
+    const riskProfile = getRiskProfile();
+    const baseAnnualReturn = riskProfile.expectedReturn / 100;
+    const marketMultiplier = marketPerformanceRates[marketPerformance].multiplier;
+    const annualReturn = baseAnnualReturn * marketMultiplier;
+    
+    // Future value of current savings
+    const savingsFutureValue = currentSavings * Math.pow(1 + annualReturn, yearsToRetirement);
+    
+    // Future value of contributions
+    const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
+    const contributionsFutureValue = monthlyContributionValue * 12 * 
+      ((Math.pow(1 + annualReturn, yearsToRetirement) - 1) / annualReturn);
+    
+    const totalSavingsAtRetirement = savingsFutureValue + contributionsFutureValue;
+    
+    // Amount needed from savings (using 4% rule - 25x annual need)
+    const annualAmountNeededFromSavings = Math.max(0, annualExpenses - annualGuaranteedIncome);
+    const savingsNeeded = annualAmountNeededFromSavings * 25;
+    
+    // Calculate savings sufficiency
+    const savingsSufficiencyRatio = Math.min(1, totalSavingsAtRetirement / (savingsNeeded || 1)) * 100;
+    
+    // Weight: 70% guaranteed income, 30% savings sufficiency
+    let probability = (expensesCoveredPercentage * 0.7) + (savingsSufficiencyRatio * 0.3);
+    
+    // Cap at 100%
+    return Math.min(100, probability);
+  };
+  
   // Calculate retirement needs and projections
   const calculateRetirement = () => {
     // Parse inputs
@@ -102,13 +238,20 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const annualExpenses = monthlyExpenses * 12;
     const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
     
-    // Use 25x annual expenses for retirement needs (4% rule)
-    // Could adjust this based on user preferences in a more advanced version
+    // Calculate total needed for retirement (25x annual expenses for 4% rule)
     const totalNeeded = annualExpenses * 25;
     
-    // Calculate future value of current pension and disability
+    // Account for current pension and disability status
     const annualPension = pensionAmount * 12;
     const annualDisability = disabilityAmount * 12;
+    
+    // If currently receiving benefits, they offset expenses immediately
+    const currentMonthlyGuaranteedIncome = 
+      (currentlyReceivingPension ? pensionAmount : 0) + 
+      (currentlyReceivingDisability ? disabilityAmount : 0);
+    
+    const annualAmountNeededFromSavings = Math.max(0, annualExpenses - (currentMonthlyGuaranteedIncome * 12));
+    const adjustedTotalNeeded = annualAmountNeededFromSavings * 25;
     
     // Calculate present value of pension and disability over retirement (assuming 30 year retirement)
     // Using a simplified calculation: annual amount * 25 (same as 4% rule)
@@ -117,7 +260,9 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     
     // Calculate growth of current savings until retirement
     const riskProfile = getRiskProfile();
-    const annualReturn = riskProfile.expectedReturn / 100;
+    const baseAnnualReturn = riskProfile.expectedReturn / 100;
+    const marketMultiplier = marketPerformanceRates[marketPerformance].multiplier;
+    const annualReturn = baseAnnualReturn * marketMultiplier;
     
     // Calculate future value of current savings
     let savingsFutureValue = currentSavings * Math.pow(1 + annualReturn, yearsToRetirement);
@@ -135,8 +280,8 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     
     const currentSavingsAtRetirement = savingsFutureValue + contributionsFutureValue;
     
-    // Calculate shortfall
-    const shortfall = Math.max(0, totalNeeded - currentSavingsAtRetirement - pensionValue - disabilityValue);
+    // Calculate shortfall (taking into account pension and disability)
+    const shortfall = Math.max(0, adjustedTotalNeeded - currentSavingsAtRetirement);
     
     // Calculate required monthly savings to cover shortfall
     let requiredMonthlySavings = 0;
@@ -147,15 +292,23 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
         (Math.pow(1 + monthlyReturn, yearsToRetirement * 12) - 1);
     }
     
+    // Calculate earliest possible retirement age
+    const earliestRetirementAge = calculateEarliestRetirementAge();
+    
+    // Calculate success probability
+    const successProbability = calculateSuccessProbability();
+    
     // Update retirement results
     setRetirementResults({
-      totalNeeded,
+      totalNeeded: adjustedTotalNeeded,
       currentSavingsAtRetirement,
       pensionValue,
       disabilityValue,
       shortfall,
       requiredMonthlySavings,
-      yearsToRetirement
+      yearsToRetirement,
+      earliestRetirementAge,
+      successProbability
     });
     
     // Generate projection data for chart
@@ -164,8 +317,8 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
       retirementAge,
       currentSavings,
       monthlyContributionValue,
-      pensionAmount,
-      disabilityAmount,
+      currentlyReceivingPension ? pensionAmount : 0,
+      currentlyReceivingDisability ? disabilityAmount : 0,
       annualReturn
     );
     
@@ -197,14 +350,20 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
       
       // Before retirement: add contributions and growth
       if (age < endAge) {
+        // If already receiving pension/disability, include them in pre-retirement
+        const yearlyPension = currentlyReceivingPension ? annualPension : 0;
+        const yearlyDisability = currentlyReceivingDisability ? annualDisability : 0;
+        
         currentSavings = currentSavings * Math.pow(1 + annualReturn, 1) + (monthlyContrib * 12);
         
         data.push({
           age,
           savings: Math.round(currentSavings),
-          pension: 0,
-          disability: 0,
-          total: Math.round(currentSavings)
+          pension: yearlyPension ? Math.round(yearlyPension * yearsPassed) : 0,
+          disability: yearlyDisability ? Math.round(yearlyDisability * yearsPassed) : 0,
+          total: Math.round(currentSavings + 
+            (yearlyPension ? yearlyPension * yearsPassed : 0) + 
+            (yearlyDisability ? yearlyDisability * yearsPassed : 0))
         });
       } 
       // After retirement: include pension and disability, simulate withdrawals
@@ -274,91 +433,229 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
         <Calculator className="mr-2" /> Retirement & Investment Simulator
       </h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div>
-          <Label htmlFor="current-age" className="flex items-center">
-            <Calendar className="mr-2 h-4 w-4" /> Your Current Age
-          </Label>
-          <Input 
-            id="current-age" 
-            type="number"
-            value={currentAge}
-            onChange={(e) => setCurrentAge(e.target.value)}
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="retirement-age" className="flex items-center">
-            <Calendar className="mr-2 h-4 w-4" /> Desired Retirement Age
-          </Label>
-          <div className="flex items-center gap-4">
-            <Input 
-              id="retirement-age" 
-              type="number"
-              value={retirementAge}
-              onChange={(e) => setRetirementAge(parseInt(e.target.value) || 65)}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+          <div className="bg-offwhite p-4 rounded-lg mb-6">
+            <h4 className="text-xl font-semibold mb-4 flex items-center">
+              <Target className="mr-2 h-5 w-5" /> Retirement Goals
+            </h4>
+            <FormField
+              control={form.control}
+              name="retirementGoal"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Select your retirement goal:</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="maintainLifestyle" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Retire as soon as possible with the same living standards
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="growWealth" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Invest and grow your retirement account to live at a higher standard
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                </FormItem>
+              )}
             />
-            <span className="text-sm text-muted-foreground">
-              ({retirementResults.yearsToRetirement} years away)
-            </span>
           </div>
-        </div>
-        
-        <div>
-          <Label htmlFor="monthly-expenses" className="flex items-center">
-            <DollarSign className="mr-2 h-4 w-4" /> Monthly Expenses in Retirement
-          </Label>
-          <Input 
-            id="monthly-expenses"
-            type="number"
-            value={monthlyExpensesInRetirement}
-            onChange={(e) => setMonthlyExpensesInRetirement(e.target.value)}
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="monthly-contribution" className="flex items-center">
-            <PiggyBank className="mr-2 h-4 w-4" /> Monthly Investment Contribution
-          </Label>
-          <Input 
-            id="monthly-contribution"
-            type="number"
-            value={monthlyContribution}
-            onChange={(e) => setMonthlyContribution(e.target.value)}
-          />
-        </div>
-        
-        <div className="md:col-span-2">
-          <Label className="flex items-center mb-2">
-            Investment Risk Tolerance
-          </Label>
-          <div className="flex flex-col space-y-2">
-            <Slider
-              value={[riskTolerance]}
-              min={0}
-              max={100}
-              step={1}
-              onValueChange={(values) => setRiskTolerance(values[0])}
-              className="mb-2"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Conservative</span>
-              <span>Moderate</span>
-              <span>Aggressive</span>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <Label htmlFor="current-age" className="flex items-center">
+                <Calendar className="mr-2 h-4 w-4" /> Your Current Age
+              </Label>
+              <Input 
+                id="current-age" 
+                type="number"
+                value={currentAge}
+                onChange={(e) => setCurrentAge(e.target.value)}
+              />
             </div>
-            <div className="text-center text-sm">
-              Expected Annual Return: {getRiskProfile().expectedReturn}%
+            
+            <div>
+              <Label htmlFor="retirement-age" className="flex items-center">
+                <Calendar className="mr-2 h-4 w-4" /> Desired Retirement Age
+              </Label>
+              <div className="flex items-center gap-4">
+                <Input 
+                  id="retirement-age" 
+                  type="number"
+                  value={retirementAge}
+                  onChange={(e) => setRetirementAge(parseInt(e.target.value) || 65)}
+                />
+                <span className="text-sm text-muted-foreground">
+                  ({retirementResults.yearsToRetirement} years away)
+                </span>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="monthly-expenses" className="flex items-center">
+                <DollarSign className="mr-2 h-4 w-4" /> Monthly Expenses in Retirement
+              </Label>
+              <Input 
+                id="monthly-expenses"
+                type="number"
+                value={monthlyExpensesInRetirement}
+                onChange={(e) => setMonthlyExpensesInRetirement(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="monthly-contribution" className="flex items-center">
+                <PiggyBank className="mr-2 h-4 w-4" /> Monthly Investment Contribution
+              </Label>
+              <Input 
+                id="monthly-contribution"
+                type="number"
+                value={monthlyContribution}
+                onChange={(e) => setMonthlyContribution(e.target.value)}
+              />
+            </div>
+            
+            {pensionAmount > 0 && (
+              <div>
+                <FormField
+                  control={form.control}
+                  name="currentlyReceivingPension"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Currently receiving military pension (${pensionAmount}/month)
+                        </FormLabel>
+                        <FormDescription>
+                          Check if you are already receiving your military pension
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+            
+            {disabilityAmount > 0 && (
+              <div>
+                <FormField
+                  control={form.control}
+                  name="currentlyReceivingDisability"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Currently receiving disability compensation (${disabilityAmount}/month)
+                        </FormLabel>
+                        <FormDescription>
+                          Check if you are already receiving your VA disability benefits
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+            
+            <div className="md:col-span-2">
+              <Label className="flex items-center mb-2">
+                <TrendingUp className="mr-2 h-4 w-4" /> Investment Risk Tolerance
+              </Label>
+              <div className="flex flex-col space-y-2">
+                <Slider
+                  value={[riskTolerance]}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onValueChange={(values) => setRiskTolerance(values[0])}
+                  className="mb-2"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Conservative</span>
+                  <span>Moderate</span>
+                  <span>Aggressive</span>
+                </div>
+                <div className="text-center text-sm">
+                  Expected Annual Return: {getRiskProfile().expectedReturn}%
+                </div>
+              </div>
+            </div>
+            
+            <div className="md:col-span-2">
+              <FormField
+                control={form.control}
+                name="marketPerformance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Market Performance Scenario</FormLabel>
+                    <FormDescription>
+                      Select a market performance scenario for your simulation
+                    </FormDescription>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex space-x-4"
+                      >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="strong" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Strong</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="average" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Average</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="below" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Below Average</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
-        </div>
-      </div>
-      
-      <Button 
-        onClick={calculateRetirement} 
-        className="w-full"
-      >
-        Recalculate Retirement Plan
-      </Button>
+          
+          <Button 
+            type="submit"
+            className="w-full"
+          >
+            Recalculate Retirement Plan
+          </Button>
+        </form>
+      </Form>
       
       <div className="mt-8">
         <Card className="mb-8">
@@ -389,6 +686,27 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
                   <p>Projected Surplus: <span className="font-bold text-green-600">${Math.abs(retirementResults.shortfall).toLocaleString()}</span></p>
                 )}
                 <p>Current Monthly Contribution: <span className="font-bold">${parseFloat(monthlyContribution).toLocaleString()}</span></p>
+                
+                {retirementGoal === "maintainLifestyle" && (
+                  <div className="mt-4 p-2 bg-green-50 border border-green-200 rounded">
+                    <p className="font-semibold">Earliest Possible Retirement: <span className="text-green-600">Age {retirementResults.earliestRetirementAge}</span></p>
+                  </div>
+                )}
+                
+                <div className="mt-4">
+                  <h5 className="font-semibold">Success Probability</h5>
+                  <div className="w-full bg-gray-200 rounded-full h-4 mt-2">
+                    <div 
+                      className={`h-4 rounded-full ${
+                        retirementResults.successProbability > 80 ? 'bg-green-500' : 
+                        retirementResults.successProbability > 60 ? 'bg-green-400' :
+                        retirementResults.successProbability > 40 ? 'bg-yellow-400' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${retirementResults.successProbability}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm mt-1 text-center">{Math.round(retirementResults.successProbability)}% likelihood of meeting retirement goals</p>
+                </div>
               </div>
               
               <div className="bg-offwhite p-4 rounded-lg">
@@ -402,6 +720,12 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
                   )}
                   {parseFloat(monthlyContribution) < (currentIncome * 0.15) && (
                     <li>Consider saving at least 15% of your income for retirement</li>
+                  )}
+                  {retirementGoal === "maintainLifestyle" && retirementResults.earliestRetirementAge < retirementAge && (
+                    <li className="text-green-600">You could potentially retire {retirementAge - retirementResults.earliestRetirementAge} years earlier than planned</li>
+                  )}
+                  {currentlyReceivingPension && currentlyReceivingDisability && (
+                    <li className="text-green-600">Your pension and disability benefits provide a strong foundation for retirement</li>
                   )}
                   <li>Regularly review and adjust your investment strategy</li>
                   <li>Consider meeting with a financial advisor who specializes in veteran benefits</li>
