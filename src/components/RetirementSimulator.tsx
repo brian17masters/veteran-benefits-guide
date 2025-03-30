@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -813,3 +814,38 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
                         margin={{
                           top: 20,
                           right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+                        <YAxis type="category" dataKey="name" />
+                        <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, undefined]} />
+                        <Legend />
+                        <Bar dataKey="value" name="Value" fill="#4CAF50" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full md:w-1/2 p-4">
+                    <h4 className="font-semibold mb-2">Income Source Strategy</h4>
+                    <p className="mb-4">Your retirement income will come from several sources. Understanding each one helps create a balanced withdrawal strategy.</p>
+                    <h4 className="font-semibold mb-2">Maximizing Your Income</h4>
+                    <ul className="list-disc list-inside text-sm">
+                      <li>Consider delaying Social Security to increase benefits</li>
+                      <li>Develop a tax-efficient withdrawal strategy</li>
+                      <li>Understand required minimum distributions (RMDs)</li>
+                      <li>Explore VA benefit enhancements you may qualify for</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+export default RetirementSimulator;
