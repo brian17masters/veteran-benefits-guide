@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +45,6 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
   disabilityAmount = 0,
   age = 35
 }) => {
-  // Form state
   const form = useForm({
     defaultValues: {
       retirementGoal: "maintainLifestyle",
@@ -56,7 +54,6 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     }
   });
   
-  // User inputs
   const [retirementAge, setRetirementAge] = useState<number>(65);
   const [monthlyExpensesInRetirement, setMonthlyExpensesInRetirement] = useState<string>(
     currentExpenses ? currentExpenses.toString() : "0"
@@ -65,17 +62,13 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
   const [monthlyContribution, setMonthlyContribution] = useState<string>("500");
   const [riskTolerance, setRiskTolerance] = useState<number>(50);
   
-  // Benefits status
   const [currentlyReceivingPension, setCurrentlyReceivingPension] = useState<boolean>(false);
   const [currentlyReceivingDisability, setCurrentlyReceivingDisability] = useState<boolean>(false);
   
-  // Retirement goal
   const [retirementGoal, setRetirementGoal] = useState<"maintainLifestyle" | "growWealth">("maintainLifestyle");
   
-  // Market performance simulation
   const [marketPerformance, setMarketPerformance] = useState<"strong" | "average" | "below">("average");
   
-  // Calculated values
   const [retirementResults, setRetirementResults] = useState<{
     totalNeeded: number;
     currentSavingsAtRetirement: number;
@@ -98,26 +91,22 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     successProbability: 0
   });
   
-  // Chart data
   const [projectionData, setProjectionData] = useState<any[]>([]);
   const [assetAllocationData, setAssetAllocationData] = useState<any[]>([]);
   const [incomeSourcesData, setIncomeSourcesData] = useState<any[]>([]);
   
-  // Risk profiles (conservative, moderate, aggressive)
   const riskProfiles = {
     conservative: { stocks: 30, bonds: 60, cash: 10, expectedReturn: 5 },
     moderate: { stocks: 60, bonds: 35, cash: 5, expectedReturn: 7 },
     aggressive: { stocks: 80, bonds: 15, cash: 5, expectedReturn: 9 }
   };
   
-  // Market performance rates
   const marketPerformanceRates = {
     strong: { multiplier: 1.3 },
     average: { multiplier: 1.0 },
     below: { multiplier: 0.7 }
   };
   
-  // Handle form submission
   const handleFormSubmit = (values: any) => {
     setRetirementGoal(values.retirementGoal);
     setCurrentlyReceivingPension(values.currentlyReceivingPension);
@@ -126,7 +115,6 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     calculateRetirement();
   };
   
-  // Get risk profile based on risk tolerance
   const getRiskProfile = () => {
     if (riskTolerance < 33) {
       return riskProfiles.conservative;
@@ -137,67 +125,52 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     }
   };
   
-  // Calculate earliest possible retirement age
   const calculateEarliestRetirementAge = () => {
     const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
     const currentAgeValue = parseInt(currentAge) || 35;
     const monthlySavingsTarget = monthlyExpenses;
     
-    // Calculate how much of monthly expenses is already covered by pension and disability
     const monthlyPension = currentlyReceivingPension ? pensionAmount : 0;
     const monthlyDisability = currentlyReceivingDisability ? disabilityAmount : 0;
     const coveredExpenses = monthlyPension + monthlyDisability;
     const neededFromSavings = Math.max(0, monthlySavingsTarget - coveredExpenses);
     
-    // If pension and disability fully cover expenses, can retire now
     if (neededFromSavings <= 0) {
       return currentAgeValue;
     }
     
-    // Calculate how much savings are needed using the 4% rule (25x annual expenses)
     const annualNeededFromSavings = neededFromSavings * 12;
     const totalSavingsNeeded = annualNeededFromSavings * 25;
     
-    // Get expected return based on risk profile and market performance
     const riskProfile = getRiskProfile();
     const baseAnnualReturn = riskProfile.expectedReturn / 100;
     const marketMultiplier = marketPerformanceRates[marketPerformance].multiplier;
     const annualReturn = baseAnnualReturn * marketMultiplier;
     
-    // Start with current age and iterate until we have enough savings
     let age = currentAgeValue;
     let currentSavingsValue = currentSavings;
     const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
     
     while (currentSavingsValue < totalSavingsNeeded && age < 100) {
-      // Apply annual return
       currentSavingsValue = currentSavingsValue * (1 + annualReturn);
-      
-      // Add annual contributions
       currentSavingsValue += monthlyContributionValue * 12;
-      
-      // Increment age
       age++;
     }
     
     return Math.min(age, 100);
   };
   
-  // Calculate success probability
   const calculateSuccessProbability = () => {
     const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
     const annualExpenses = monthlyExpenses * 12;
     
-    // Calculate total income in retirement
     const monthlyPension = currentlyReceivingPension ? pensionAmount : 0;
     const monthlyDisability = currentlyReceivingDisability ? disabilityAmount : 0;
     const monthlyGuaranteedIncome = monthlyPension + monthlyDisability;
     const annualGuaranteedIncome = monthlyGuaranteedIncome * 12;
     
-    // Calculate what percentage of expenses is covered by guaranteed income
     const expensesCoveredPercentage = Math.min(1, annualGuaranteedIncome / annualExpenses) * 100;
     
-    // Calculate if savings are on track
     const currentAgeValue = parseInt(currentAge) || 35;
     const yearsToRetirement = retirementAge - currentAgeValue;
     const riskProfile = getRiskProfile();
@@ -205,47 +178,35 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const marketMultiplier = marketPerformanceRates[marketPerformance].multiplier;
     const annualReturn = baseAnnualReturn * marketMultiplier;
     
-    // Future value of current savings
     const savingsFutureValue = currentSavings * Math.pow(1 + annualReturn, yearsToRetirement);
-    
-    // Future value of contributions
     const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
     const contributionsFutureValue = monthlyContributionValue * 12 * 
-      ((Math.pow(1 + annualReturn, yearsToRetirement) - 1) / annualReturn);
+      ((Math.pow(1 + annualReturn, yearsToRetirement * 12) - 1) / annualReturn);
     
     const totalSavingsAtRetirement = savingsFutureValue + contributionsFutureValue;
     
-    // Amount needed from savings (using 4% rule - 25x annual need)
     const annualAmountNeededFromSavings = Math.max(0, annualExpenses - annualGuaranteedIncome);
     const savingsNeeded = annualAmountNeededFromSavings * 25;
     
-    // Calculate savings sufficiency
     const savingsSufficiencyRatio = Math.min(1, totalSavingsAtRetirement / (savingsNeeded || 1)) * 100;
     
-    // Weight: 70% guaranteed income, 30% savings sufficiency
     let probability = (expensesCoveredPercentage * 0.7) + (savingsSufficiencyRatio * 0.3);
     
-    // Cap at 100%
     return Math.min(100, probability);
   };
   
-  // Calculate retirement needs and projections
   const calculateRetirement = () => {
-    // Parse inputs
     const currentAgeValue = parseInt(currentAge) || 35;
     const yearsToRetirement = retirementAge - currentAgeValue;
     const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
     const annualExpenses = monthlyExpenses * 12;
     const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
     
-    // Calculate total needed for retirement (25x annual expenses for 4% rule)
     const totalNeeded = annualExpenses * 25;
     
-    // Account for current pension and disability status
     const annualPension = pensionAmount * 12;
     const annualDisability = disabilityAmount * 12;
     
-    // If currently receiving benefits, they offset expenses immediately
     const currentMonthlyGuaranteedIncome = 
       (currentlyReceivingPension ? pensionAmount : 0) + 
       (currentlyReceivingDisability ? disabilityAmount : 0);
@@ -253,21 +214,16 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const annualAmountNeededFromSavings = Math.max(0, annualExpenses - (currentMonthlyGuaranteedIncome * 12));
     const adjustedTotalNeeded = annualAmountNeededFromSavings * 25;
     
-    // Calculate present value of pension and disability over retirement (assuming 30 year retirement)
-    // Using a simplified calculation: annual amount * 25 (same as 4% rule)
     const pensionValue = annualPension * 25;
     const disabilityValue = annualDisability * 25;
     
-    // Calculate growth of current savings until retirement
     const riskProfile = getRiskProfile();
     const baseAnnualReturn = riskProfile.expectedReturn / 100;
     const marketMultiplier = marketPerformanceRates[marketPerformance].multiplier;
     const annualReturn = baseAnnualReturn * marketMultiplier;
     
-    // Calculate future value of current savings
     let savingsFutureValue = currentSavings * Math.pow(1 + annualReturn, yearsToRetirement);
     
-    // Calculate future value of monthly contributions (PMT formula)
     const monthlyReturn = Math.pow(1 + annualReturn, 1/12) - 1;
     let contributionsFutureValue = 0;
     
@@ -280,10 +236,8 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     
     const currentSavingsAtRetirement = savingsFutureValue + contributionsFutureValue;
     
-    // Calculate shortfall (taking into account pension and disability)
     const shortfall = Math.max(0, adjustedTotalNeeded - currentSavingsAtRetirement);
     
-    // Calculate required monthly savings to cover shortfall
     let requiredMonthlySavings = 0;
     
     if (shortfall > 0 && monthlyReturn > 0 && yearsToRetirement > 0) {
@@ -292,13 +246,10 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
         (Math.pow(1 + monthlyReturn, yearsToRetirement * 12) - 1);
     }
     
-    // Calculate earliest possible retirement age
     const earliestRetirementAge = calculateEarliestRetirementAge();
     
-    // Calculate success probability
     const successProbability = calculateSuccessProbability();
     
-    // Update retirement results
     setRetirementResults({
       totalNeeded: adjustedTotalNeeded,
       currentSavingsAtRetirement,
@@ -311,7 +262,6 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
       successProbability
     });
     
-    // Generate projection data for chart
     generateProjectionData(
       currentAgeValue,
       retirementAge,
@@ -322,14 +272,11 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
       annualReturn
     );
     
-    // Generate asset allocation data
     generateAssetAllocationData(riskProfile);
     
-    // Generate income sources data
     generateIncomeSourcesData(currentSavingsAtRetirement, pensionValue, disabilityValue);
   };
   
-  // Generate projection data for chart
   const generateProjectionData = (
     startAge: number,
     endAge: number,
@@ -345,55 +292,63 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const annualPension = pension * 12;
     const annualDisability = disability * 12;
     
+    let cumulativePension = 0;
+    let cumulativeDisability = 0;
+    
     for (let age = startAge; age <= Math.min(endAge + 30, 100); age++) {
       const yearsPassed = age - startAge;
       
-      // Before retirement: add contributions and growth
       if (age < endAge) {
-        // If already receiving pension/disability, include them in pre-retirement
-        const yearlyPension = currentlyReceivingPension ? annualPension : 0;
-        const yearlyDisability = currentlyReceivingDisability ? annualDisability : 0;
+        if (currentlyReceivingPension) {
+          cumulativePension += annualPension;
+        }
+        
+        if (currentlyReceivingDisability) {
+          cumulativeDisability += annualDisability;
+        }
         
         currentSavings = currentSavings * Math.pow(1 + annualReturn, 1) + (monthlyContrib * 12);
         
         data.push({
           age,
           savings: Math.round(currentSavings),
-          pension: yearlyPension ? Math.round(yearlyPension * yearsPassed) : 0,
-          disability: yearlyDisability ? Math.round(yearlyDisability * yearsPassed) : 0,
+          pension: currentlyReceivingPension ? Math.round(cumulativePension) : 0,
+          disability: currentlyReceivingDisability ? Math.round(cumulativeDisability) : 0,
           total: Math.round(currentSavings + 
-            (yearlyPension ? yearlyPension * yearsPassed : 0) + 
-            (yearlyDisability ? yearlyDisability * yearsPassed : 0))
+            (currentlyReceivingPension ? cumulativePension : 0) + 
+            (currentlyReceivingDisability ? cumulativeDisability : 0))
         });
-      } 
-      // After retirement: include pension and disability, simulate withdrawals
-      else {
+      } else {
         const yearsSinceRetirement = age - endAge;
-        const pensionTotal = annualPension * (yearsSinceRetirement + 1);
-        const disabilityTotal = annualDisability * (yearsSinceRetirement + 1);
         
-        // Simplistic withdrawal model
-        // In a more sophisticated model, we'd calculate actual withdrawals based on expenses
-        if (yearsSinceRetirement === 0) {
-          // First year of retirement, no withdrawal impact yet
+        if (currentlyReceivingPension) {
+          cumulativePension += annualPension;
         } else {
-          // Apply modest return in retirement (more conservative)
-          currentSavings = currentSavings * (1 + (annualReturn * 0.5));
-          
-          // Simulate withdrawals (simplified)
-          const expenses = parseFloat(monthlyExpensesInRetirement) * 12 || 0;
-          const incomeFromPensionAndDisability = annualPension + annualDisability;
-          const withdrawalNeeded = Math.max(0, expenses - incomeFromPensionAndDisability);
-          
-          currentSavings = Math.max(0, currentSavings - withdrawalNeeded);
+          cumulativePension = annualPension * (yearsSinceRetirement + 1);
         }
+        
+        if (currentlyReceivingDisability) {
+          cumulativeDisability += annualDisability;
+        } else {
+          cumulativeDisability = annualDisability * (yearsSinceRetirement + 1);
+        }
+        
+        currentSavings = currentSavings * (1 + (annualReturn * 0.5));
+        
+        const expenses = parseFloat(monthlyExpensesInRetirement) * 12 || 0;
+        const incomeFromPensionAndDisability = 
+          (currentlyReceivingPension || yearsSinceRetirement > 0 ? annualPension : 0) + 
+          (currentlyReceivingDisability || yearsSinceRetirement > 0 ? annualDisability : 0);
+        const withdrawalNeeded = Math.max(0, expenses - incomeFromPensionAndDisability);
+        
+        currentSavings = Math.max(0, currentSavings - withdrawalNeeded);
         
         data.push({
           age,
           savings: Math.round(currentSavings),
-          pension: Math.round(pensionTotal),
-          disability: Math.round(disabilityTotal),
-          total: Math.round(currentSavings + pensionTotal + disabilityTotal)
+          pension: Math.round(cumulativePension),
+          disability: Math.round(cumulativeDisability),
+          total: Math.round(currentSavings + cumulativePension + cumulativeDisability)
         });
       }
     }
@@ -401,7 +356,6 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     setProjectionData(data);
   };
   
-  // Generate asset allocation data
   const generateAssetAllocationData = (riskProfile: any) => {
     setAssetAllocationData([
       { name: "Stocks", value: riskProfile.stocks },
@@ -410,7 +364,6 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     ]);
   };
   
-  // Generate income sources data
   const generateIncomeSourcesData = (savings: number, pension: number, disability: number) => {
     setIncomeSourcesData([
       { name: "Investments", value: Math.round(savings) },
@@ -419,12 +372,10 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     ]);
   };
   
-  // Run calculation when component mounts
   useEffect(() => {
     calculateRetirement();
   }, []);
   
-  // Chart colors
   const COLORS = ['#4CAF50', '#9E9E9E', '#FFEB3B', '#FF9800'];
   
   return (
