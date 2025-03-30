@@ -88,3 +88,8 @@ export const generateSavingsProjection = (currentSavings: number, annualSavings:
   
   return projectionData;
 };
+
+// New helper function to calculate dollar amount from percentage of income
+export const calculateContributionAmount = (income: number, percentage: number): number => {
+  return (income * percentage) / 100;
+};

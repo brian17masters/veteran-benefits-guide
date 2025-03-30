@@ -22,11 +22,12 @@ import {
   Pie, 
   Cell
 } from "recharts";
-import { DollarSign, PiggyBank, Calculator, Calendar, Target, TrendingUp } from "lucide-react";
+import { DollarSign, PiggyBank, Calculator, Calendar, Target, TrendingUp, Percent } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { calculateContributionAmount } from "@/utils/financialCalculations";
 
 interface RetirementSimulatorProps {
   currentIncome?: number;
@@ -59,7 +60,7 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     currentExpenses ? currentExpenses.toString() : "0"
   );
   const [currentAge, setCurrentAge] = useState<string>(age.toString());
-  const [monthlyContribution, setMonthlyContribution] = useState<string>("500");
+  const [contributionPercentage, setContributionPercentage] = useState<string>("15");
   const [riskTolerance, setRiskTolerance] = useState<number>(50);
   
   const [currentlyReceivingPension, setCurrentlyReceivingPension] = useState<boolean>(false);
@@ -94,6 +95,12 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
   const [projectionData, setProjectionData] = useState<any[]>([]);
   const [assetAllocationData, setAssetAllocationData] = useState<any[]>([]);
   const [incomeSourcesData, setIncomeSourcesData] = useState<any[]>([]);
+  
+  // Calculate the dollar amount from percentage
+  const contributionAmount = calculateContributionAmount(
+    currentIncome, 
+    parseFloat(contributionPercentage) || 0
+  );
   
   const riskProfiles = {
     conservative: { stocks: 30, bonds: 60, cash: 10, expectedReturn: 5 },
@@ -149,11 +156,10 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     
     let age = currentAgeValue;
     let currentSavingsValue = currentSavings;
-    const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
     
     while (currentSavingsValue < totalSavingsNeeded && age < 100) {
       currentSavingsValue = currentSavingsValue * (1 + annualReturn);
-      currentSavingsValue += monthlyContributionValue * 12;
+      currentSavingsValue += contributionAmount * 12;
       age++;
     }
     
@@ -179,8 +185,8 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const annualReturn = baseAnnualReturn * marketMultiplier;
     
     const savingsFutureValue = currentSavings * Math.pow(1 + annualReturn, yearsToRetirement);
-    const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
-    const contributionsFutureValue = monthlyContributionValue * 12 * 
+    
+    const contributionsFutureValue = contributionAmount * 12 * 
       ((Math.pow(1 + annualReturn, yearsToRetirement * 12) - 1) / annualReturn);
     
     const totalSavingsAtRetirement = savingsFutureValue + contributionsFutureValue;
@@ -200,7 +206,6 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const yearsToRetirement = retirementAge - currentAgeValue;
     const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
     const annualExpenses = monthlyExpenses * 12;
-    const monthlyContributionValue = parseFloat(monthlyContribution) || 0;
     
     const totalNeeded = annualExpenses * 25;
     
@@ -228,10 +233,10 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     let contributionsFutureValue = 0;
     
     if (monthlyReturn > 0) {
-      contributionsFutureValue = monthlyContributionValue * 
+      contributionsFutureValue = contributionAmount * 
         ((Math.pow(1 + monthlyReturn, yearsToRetirement * 12) - 1) / monthlyReturn);
     } else {
-      contributionsFutureValue = monthlyContributionValue * yearsToRetirement * 12;
+      contributionsFutureValue = contributionAmount * yearsToRetirement * 12;
     }
     
     const currentSavingsAtRetirement = savingsFutureValue + contributionsFutureValue;
@@ -266,7 +271,7 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
       currentAgeValue,
       retirementAge,
       currentSavings,
-      monthlyContributionValue,
+      contributionAmount,
       currentlyReceivingPension ? pensionAmount : 0,
       currentlyReceivingDisability ? disabilityAmount : 0,
       annualReturn
@@ -468,15 +473,20 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
             </div>
             
             <div>
-              <Label htmlFor="monthly-contribution" className="flex items-center">
-                <PiggyBank className="mr-2 h-4 w-4" /> Monthly Investment Contribution
+              <Label htmlFor="contribution-percentage" className="flex items-center">
+                <Percent className="mr-2 h-4 w-4" /> Monthly Investment Contribution
               </Label>
-              <Input 
-                id="monthly-contribution"
-                type="number"
-                value={monthlyContribution}
-                onChange={(e) => setMonthlyContribution(e.target.value)}
-              />
+              <div className="flex items-center gap-4">
+                <Input 
+                  id="contribution-percentage"
+                  type="number"
+                  value={contributionPercentage}
+                  onChange={(e) => setContributionPercentage(e.target.value)}
+                />
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  (${contributionAmount.toFixed(0)}/month)
+                </span>
+              </div>
             </div>
             
             {pensionAmount > 0 && (
@@ -636,7 +646,7 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
                 ) : (
                   <p>Projected Surplus: <span className="font-bold text-green-600">${Math.abs(retirementResults.shortfall).toLocaleString()}</span></p>
                 )}
-                <p>Current Monthly Contribution: <span className="font-bold">${parseFloat(monthlyContribution).toLocaleString()}</span></p>
+                <p>Current Monthly Contribution: <span className="font-bold">${contributionAmount.toFixed(0)}</span> ({contributionPercentage}% of income)</p>
                 
                 {retirementGoal === "maintainLifestyle" && (
                   <div className="mt-4 p-2 bg-green-50 border border-green-200 rounded">
@@ -669,7 +679,7 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
                   {retirementResults.shortfall <= 0 && (
                     <li className="text-green-600">You're on track to meet your retirement goals!</li>
                   )}
-                  {parseFloat(monthlyContribution) < (currentIncome * 0.15) && (
+                  {parseFloat(contributionPercentage) < (currentIncome * 0.15) && (
                     <li>Consider saving at least 15% of your income for retirement</li>
                   )}
                   {retirementGoal === "maintainLifestyle" && retirementResults.earliestRetirementAge < retirementAge && (
@@ -803,41 +813,3 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
                         margin={{
                           top: 20,
                           right: 30,
-                          left: 70,
-                          bottom: 5,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-                        <YAxis dataKey="name" type="category" />
-                        <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                        <Legend />
-                        <Bar dataKey="value" name="Value" fill="#4CAF50" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="w-full md:w-1/2 p-4">
-                    <h4 className="font-semibold mb-2">Income Source Details</h4>
-                    <ul className="list-none space-y-2">
-                      <li>
-                        <span className="font-semibold">Investments:</span> Your personal retirement savings and investments, projected to grow to ${retirementResults.currentSavingsAtRetirement.toLocaleString()} by retirement.
-                      </li>
-                      <li>
-                        <span className="font-semibold">Pension:</span> Your military pension has a projected value of ${retirementResults.pensionValue.toLocaleString()} over your retirement.
-                      </li>
-                      <li>
-                        <span className="font-semibold">Disability:</span> Your VA disability benefits have a projected value of ${retirementResults.disabilityValue.toLocaleString()} over your retirement.
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  );
-};
-
-export default RetirementSimulator;
