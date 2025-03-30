@@ -33,10 +33,14 @@ export const calculateFinancialSummary = (
   // Calculate surplus/deficit
   const monthlySurplus = totalMonthlyIncome - expenses;
   
+  // Calculate how much of the expenses are covered by guaranteed income (pension + disability)
+  const guaranteedIncome = pension + disability;
+  const expensesNeedingCoverage = Math.max(0, expenses - guaranteedIncome);
+  
   // Estimate years to retirement (simple calculation)
-  // Assuming retirement needs 25x annual expenses
-  const annualExpenses = expenses * 12;
-  const retirementNeeds = annualExpenses * 25;
+  // Adjusting retirement needs based on expenses not covered by guaranteed income
+  const annualExpensesNeedingCoverage = expensesNeedingCoverage * 12;
+  const retirementNeeds = annualExpensesNeedingCoverage * 25;
   const annualSavings = monthlySurplus * 12;
   const yearsToRetirement = annualSavings > 0 
     ? Math.max(0, (retirementNeeds - currentSavings) / annualSavings)
@@ -92,4 +96,19 @@ export const generateSavingsProjection = (currentSavings: number, annualSavings:
 // New helper function to calculate dollar amount from percentage of income
 export const calculateContributionAmount = (income: number, percentage: number): number => {
   return (income * percentage) / 100;
+};
+
+// New function to calculate retirement needs accounting for guaranteed income
+export const calculateRetirementNeedsWithGuaranteedIncome = (
+  monthlyExpenses: number,
+  monthlyPension: number,
+  monthlyDisability: number
+): number => {
+  // Calculate how much monthly expense is not covered by guaranteed income
+  const guaranteedMonthlyIncome = monthlyPension + monthlyDisability;
+  const monthlyExpensesNeedingCoverage = Math.max(0, monthlyExpenses - guaranteedMonthlyIncome);
+  
+  // Convert to annual amount and multiply by 25 (4% rule)
+  const annualExpensesNeedingCoverage = monthlyExpensesNeedingCoverage * 12;
+  return annualExpensesNeedingCoverage * 25;
 };

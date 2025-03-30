@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +27,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { calculateContributionAmount } from "@/utils/financialCalculations";
+import { 
+  calculateContributionAmount, 
+  calculateRetirementNeedsWithGuaranteedIncome 
+} from "@/utils/financialCalculations";
 
 interface RetirementSimulatorProps {
   currentIncome?: number;
@@ -136,19 +138,21 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
   const calculateEarliestRetirementAge = () => {
     const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
     const currentAgeValue = parseInt(currentAge) || 35;
-    const monthlySavingsTarget = monthlyExpenses;
     
     const monthlyPension = currentlyReceivingPension ? pensionAmount : 0;
     const monthlyDisability = currentlyReceivingDisability ? disabilityAmount : 0;
-    const coveredExpenses = monthlyPension + monthlyDisability;
-    const neededFromSavings = Math.max(0, monthlySavingsTarget - coveredExpenses);
+    const guaranteedIncome = monthlyPension + monthlyDisability;
     
-    if (neededFromSavings <= 0) {
+    // Calculate expenses not covered by guaranteed income
+    const expensesNeedingCoverage = Math.max(0, monthlyExpenses - guaranteedIncome);
+    
+    // If all expenses are covered by guaranteed income, they could retire immediately
+    if (expensesNeedingCoverage <= 0) {
       return currentAgeValue;
     }
     
-    const annualNeededFromSavings = neededFromSavings * 12;
-    const totalSavingsNeeded = annualNeededFromSavings * 25;
+    const annualExpensesNeedingCoverage = expensesNeedingCoverage * 12;
+    const totalSavingsNeeded = annualExpensesNeedingCoverage * 25;
     
     const riskProfile = getRiskProfile();
     const baseAnnualReturn = riskProfile.expectedReturn / 100;
@@ -206,23 +210,26 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const currentAgeValue = parseInt(currentAge) || 35;
     const yearsToRetirement = retirementAge - currentAgeValue;
     const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
-    const annualExpenses = monthlyExpenses * 12;
     
-    const totalNeeded = annualExpenses * 25;
+    // Calculate considering guaranteed income
+    const monthlyPension = currentlyReceivingPension ? pensionAmount : 0;
+    const monthlyDisability = currentlyReceivingDisability ? disabilityAmount : 0;
+    const monthlyGuaranteedIncome = monthlyPension + monthlyDisability;
     
+    // Calculate expenses not covered by guaranteed income
+    const monthlyExpensesNeedingCoverage = Math.max(0, monthlyExpenses - monthlyGuaranteedIncome);
+    const annualExpensesNeedingCoverage = monthlyExpensesNeedingCoverage * 12;
+    
+    // Total retirement needs adjusting for guaranteed income
+    const adjustedTotalNeeded = annualExpensesNeedingCoverage * 25;
+    
+    // Value of pension and disability as retirement assets
     const annualPension = pensionAmount * 12;
     const annualDisability = disabilityAmount * 12;
-    
-    const currentMonthlyGuaranteedIncome = 
-      (currentlyReceivingPension ? pensionAmount : 0) + 
-      (currentlyReceivingDisability ? disabilityAmount : 0);
-    
-    const annualAmountNeededFromSavings = Math.max(0, annualExpenses - (currentMonthlyGuaranteedIncome * 12));
-    const adjustedTotalNeeded = annualAmountNeededFromSavings * 25;
-    
     const pensionValue = annualPension * 25;
     const disabilityValue = annualDisability * 25;
     
+    // Investment return calculations
     const riskProfile = getRiskProfile();
     const baseAnnualReturn = riskProfile.expectedReturn / 100;
     const marketMultiplier = marketPerformanceRates[marketPerformance].multiplier;
@@ -242,6 +249,7 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     
     const currentSavingsAtRetirement = savingsFutureValue + contributionsFutureValue;
     
+    // Calculate shortfall based on adjusted needs
     const shortfall = Math.max(0, adjustedTotalNeeded - currentSavingsAtRetirement);
     
     let requiredMonthlySavings = 0;
@@ -273,8 +281,8 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
       retirementAge,
       currentSavings,
       contributionAmount,
-      currentlyReceivingPension ? pensionAmount : 0,
-      currentlyReceivingDisability ? disabilityAmount : 0,
+      monthlyPension,  // Use updated pension amount
+      monthlyDisability, // Use updated disability amount
       annualReturn
     );
     
@@ -297,6 +305,7 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
     const monthlyReturn = Math.pow(1 + annualReturn, 1/12) - 1;
     const annualPension = pension * 12;
     const annualDisability = disability * 12;
+    const monthlyExpenses = parseFloat(monthlyExpensesInRetirement) || 0;
     
     let cumulativePension = 0;
     let cumulativeDisability = 0;
@@ -305,6 +314,7 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
       const yearsPassed = age - startAge;
       
       if (age < endAge) {
+        // Pre-retirement phase: accumulating savings
         if (currentlyReceivingPension) {
           cumulativePension += annualPension;
         }
@@ -325,28 +335,42 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
             (currentlyReceivingDisability ? cumulativeDisability : 0))
         });
       } else {
+        // Post-retirement phase: spending from savings
         const yearsSinceRetirement = age - endAge;
         
+        // Calculate annual pension and disability, whether they start at retirement or are already receiving them
+        let yearlyPensionAmount = 0;
+        let yearlyDisabilityAmount = 0;
+        
         if (currentlyReceivingPension) {
+          // Already receiving pension, continue accumulating
           cumulativePension += annualPension;
+          yearlyPensionAmount = annualPension;
         } else {
-          cumulativePension = annualPension * (yearsSinceRetirement + 1);
+          // Start pension at retirement
+          yearlyPensionAmount = annualPension;
+          cumulativePension += yearlyPensionAmount;
         }
         
         if (currentlyReceivingDisability) {
+          // Already receiving disability, continue accumulating
           cumulativeDisability += annualDisability;
+          yearlyDisabilityAmount = annualDisability;
         } else {
-          cumulativeDisability = annualDisability * (yearsSinceRetirement + 1);
+          // Start disability at retirement
+          yearlyDisabilityAmount = annualDisability;
+          cumulativeDisability += yearlyDisabilityAmount;
         }
         
+        // Investment growth (usually lower in retirement - using 50% of pre-retirement return)
         currentSavings = currentSavings * (1 + (annualReturn * 0.5));
         
-        const expenses = parseFloat(monthlyExpensesInRetirement) * 12 || 0;
-        const incomeFromPensionAndDisability = 
-          (currentlyReceivingPension || yearsSinceRetirement > 0 ? annualPension : 0) + 
-          (currentlyReceivingDisability || yearsSinceRetirement > 0 ? annualDisability : 0);
-        const withdrawalNeeded = Math.max(0, expenses - incomeFromPensionAndDisability);
+        // Calculate withdrawal needed, accounting for pension and disability
+        const yearlyExpenses = monthlyExpenses * 12;
+        const totalGuaranteedIncome = yearlyPensionAmount + yearlyDisabilityAmount;
+        const withdrawalNeeded = Math.max(0, yearlyExpenses - totalGuaranteedIncome);
         
+        // Withdraw from savings
         currentSavings = Math.max(0, currentSavings - withdrawalNeeded);
         
         data.push({
@@ -790,62 +814,4 @@ const RetirementSimulator: React.FC<RetirementSimulatorProps> = ({
                       <li>TSP: Low-cost funds available to military/federal employees</li>
                       <li>IRAs: Traditional or Roth for tax advantages</li>
                       <li>Taxable brokerage accounts for additional flexibility</li>
-                      <li>Treasury bonds for safe, tax-advantaged income</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="sources">
-            <Card>
-              <CardHeader>
-                <CardTitle>Retirement Income Sources</CardTitle>
-                <CardDescription>Projected value of different income sources at retirement</CardDescription>
-              </CardHeader>
-              <CardContent className="h-80">
-                <div className="flex flex-col md:flex-row items-center justify-center">
-                  <div className="w-full md:w-1/2 h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={incomeSourcesData}
-                        layout="vertical"
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-                        <YAxis type="category" dataKey="name" />
-                        <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, undefined]} />
-                        <Legend />
-                        <Bar dataKey="value" name="Value" fill="#4CAF50" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="w-full md:w-1/2 p-4">
-                    <h4 className="font-semibold mb-2">Income Source Strategy</h4>
-                    <p className="mb-4">Your retirement income will come from several sources. Understanding each one helps create a balanced withdrawal strategy.</p>
-                    <h4 className="font-semibold mb-2">Maximizing Your Income</h4>
-                    <ul className="list-disc list-inside text-sm">
-                      <li>Consider delaying Social Security to increase benefits</li>
-                      <li>Develop a tax-efficient withdrawal strategy</li>
-                      <li>Understand required minimum distributions (RMDs)</li>
-                      <li>Explore VA benefit enhancements you may qualify for</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  );
-};
-
-export default RetirementSimulator;
+                      <li>Treasury bonds for safe,
