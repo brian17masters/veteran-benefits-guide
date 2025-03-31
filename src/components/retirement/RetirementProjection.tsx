@@ -3,11 +3,23 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
+interface ProjectionData {
+  age: number;
+  savings: number;
+  pension: number;
+  disability: number;
+}
+
 interface RetirementProjectionProps {
-  projectionData: any[];
+  projectionData: ProjectionData[];
 }
 
 const RetirementProjection: React.FC<RetirementProjectionProps> = ({ projectionData }) => {
+  // Calculate the total value for tooltip display
+  const getTooltipContent = (value: number, name: string) => {
+    return [`$${value.toLocaleString()}`, name];
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -43,7 +55,7 @@ const RetirementProjection: React.FC<RetirementProjectionProps> = ({ projectionD
               }}  
             />
             <Tooltip 
-              formatter={(value) => [`$${value.toLocaleString()}`, undefined]}
+              formatter={getTooltipContent}
               labelFormatter={(label) => `Age: ${label}`}
             />
             <Legend />

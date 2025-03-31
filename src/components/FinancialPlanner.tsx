@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import FinancialInputForm from "./financialPlanner/FinancialInputForm";
 import FinancialSummary from "./financialPlanner/FinancialSummary";
 import FinancialCharts from "./financialPlanner/FinancialCharts";
+import FinancialChatbot, { FinancialInfo } from "./chatbot/FinancialChatbot";
 import {
   calculateFinancialSummary,
   generateIncomeData,
@@ -10,6 +11,8 @@ import {
   generateSavingsProjection,
   FinancialSummary as FinancialSummaryType
 } from "@/utils/financialCalculations";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
 
 interface FinancialPlannerProps {
   onCalculate?: (data: any) => void;
@@ -22,6 +25,7 @@ const FinancialPlanner: React.FC<FinancialPlannerProps> = ({ onCalculate }) => {
   const [monthlyExpenses, setMonthlyExpenses] = useState("");
   const [savings, setSavings] = useState("");
   const [hasCalculated, setHasCalculated] = useState(false);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   
   // Financial summary data
   const [summaryData, setSummaryData] = useState<FinancialSummaryType>({
@@ -75,9 +79,33 @@ const FinancialPlanner: React.FC<FinancialPlannerProps> = ({ onCalculate }) => {
     setHasCalculated(true);
   };
 
+  const handleChatbotInfoCollected = (info: FinancialInfo) => {
+    if (info.currentIncome) setCurrentIncome(info.currentIncome);
+    if (info.expectedPension) setExpectedPension(info.expectedPension);
+    if (info.disabilityPayment) setDisabilityPayment(info.disabilityPayment);
+    if (info.monthlyExpenses) setMonthlyExpenses(info.monthlyExpenses);
+    if (info.savings) setSavings(info.savings);
+    
+    // Automatically calculate after getting all information
+    setTimeout(() => {
+      handleCalculate();
+    }, 500);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
-      <h3 className="text-2xl font-bold mb-6">Financial Planner</h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold">Financial Planner</h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsChatbotOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span>Chat Assistant</span>
+        </Button>
+      </div>
       
       <FinancialInputForm
         currentIncome={currentIncome}
@@ -103,6 +131,12 @@ const FinancialPlanner: React.FC<FinancialPlannerProps> = ({ onCalculate }) => {
           />
         </div>
       )}
+
+      <FinancialChatbot 
+        isOpen={isChatbotOpen}
+        onClose={() => setIsChatbotOpen(false)}
+        onInfoCollected={handleChatbotInfoCollected}
+      />
     </div>
   );
 };
