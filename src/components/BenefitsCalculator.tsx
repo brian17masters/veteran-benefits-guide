@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,11 @@ const locationOptions = [
   "District of Columbia"
 ];
 
+interface Dependent {
+  type: 'spouse' | 'child' | 'parent';
+  id: string;
+}
+
 interface BenefitResult {
   name: string;
   description: string;
@@ -38,11 +42,48 @@ const BenefitsCalculator = () => {
   const [disabilityRating, setDisabilityRating] = useState("");
   const [results, setResults] = useState<BenefitResult[]>([]);
   const [hasCalculated, setHasCalculated] = useState(false);
+  const [dependents, setDependents] = useState<Dependent[]>([]);
+
+  const addDependent = (type: 'spouse' | 'child' | 'parent') => {
+    setDependents([...dependents, { type, id: Math.random().toString() }]);
+  };
+
+  const removeDependent = (id: string) => {
+    setDependents(dependents.filter(dep => dep.id !== id));
+  };
+
+  const calculateDisabilityCompensation = (rating: number): string => {
+    if (rating <= 0) return "0";
+    if (rating <= 10) return "152.64";
+    if (rating <= 20) return "301.74";
+    if (rating <= 30) return "467.39";
+    if (rating <= 40) return "673.28";
+    if (rating <= 50) return "958.44";
+    if (rating <= 60) return "1,214.03";
+    if (rating <= 70) return "1,529.95";
+    if (rating <= 80) return "1,778.43";
+    if (rating <= 90) return "1,998.52";
+    return "3,332.06"; // 100%
+  };
+
+  const calculateDependentCompensation = (baseAmount: number, rating: number): string => {
+    if (rating < 30) return baseAmount.toFixed(2); // No additional compensation below 30%
+    
+    let additional = 0;
+    const spouseCount = dependents.filter(d => d.type === 'spouse').length;
+    const childCount = dependents.filter(d => d.type === 'child').length;
+    const parentCount = dependents.filter(d => d.type === 'parent').length;
+    
+    if (rating >= 30) {
+      if (spouseCount > 0) additional += 150;
+      additional += childCount * 100;
+      additional += parentCount * 120;
+    }
+    
+    return (baseAmount + additional).toFixed(2);
+  };
 
   const handleCalculate = () => {
-    // This would normally be based on actual calculations and API data
-    // For now, we'll use sample data based on inputs
-    
     const sampleBenefits: BenefitResult[] = [
       {
         name: "GI Bill Education Benefits",
@@ -59,7 +100,7 @@ const BenefitsCalculator = () => {
       {
         name: "VA Disability Compensation",
         description: "Monthly tax-free payment for veterans with service-connected disabilities.",
-        eligibility: `With a ${disabilityRating}% disability rating, you qualify for approximately $${calculateDisabilityCompensation(parseInt(disabilityRating))}/month.`,
+        eligibility: `With a ${disabilityRating}% disability rating, you qualify for approximately $${calculateDependentCompensation(parseFloat(calculateDisabilityCompensation(parseInt(disabilityRating))), parseInt(disabilityRating))}/month including dependent benefits.`,
         link: "https://www.va.gov/disability/"
       },
       {
@@ -72,22 +113,6 @@ const BenefitsCalculator = () => {
     
     setResults(sampleBenefits);
     setHasCalculated(true);
-  };
-
-  // Simple function to calculate approximate disability compensation
-  // In a real app, this would be much more complex and accurate
-  const calculateDisabilityCompensation = (rating: number): string => {
-    if (rating <= 0) return "0";
-    if (rating <= 10) return "152.64";
-    if (rating <= 20) return "301.74";
-    if (rating <= 30) return "467.39";
-    if (rating <= 40) return "673.28";
-    if (rating <= 50) return "958.44";
-    if (rating <= 60) return "1,214.03";
-    if (rating <= 70) return "1,529.95";
-    if (rating <= 80) return "1,778.43";
-    if (rating <= 90) return "1,998.52";
-    return "3,332.06"; // 100%
   };
 
   return (
@@ -145,6 +170,52 @@ const BenefitsCalculator = () => {
             value={disabilityRating}
             onChange={(e) => setDisabilityRating(e.target.value)}
           />
+        </div>
+      </div>
+      
+      <div className="md:col-span-2">
+        <Label>Dependents</Label>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-4">
+            {dependents.map((dependent) => (
+              <Card key={dependent.id} className="w-full sm:w-auto">
+                <CardHeader className="py-2">
+                  <CardTitle className="text-sm capitalize">{dependent.type}</CardTitle>
+                </CardHeader>
+                <CardFooter className="py-2">
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => removeDependent(dependent.id)}
+                  >
+                    Remove
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => addDependent('spouse')}
+              disabled={dependents.filter(d => d.type === 'spouse').length >= 1}
+            >
+              Add Spouse
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => addDependent('child')}
+            >
+              Add Child
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => addDependent('parent')}
+            >
+              Add Parent
+            </Button>
+          </div>
         </div>
       </div>
       
